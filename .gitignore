@@ -8,3 +8,4 @@ simulation/*
 *.qsf
 *.rpt
 *.cmp
+*.qws
