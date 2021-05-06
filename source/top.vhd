@@ -6,10 +6,12 @@ use ieee.numeric_std.all;
 entity top is
     generic (INPUT_PORTS : integer := 10 -- 10 ports (10 bits [0..9])
              );
-    port(clk      : in  std_logic;
-         p_input  : in  std_logic_vector(INPUT_PORTS-1 downto 0);
-         reset    : in  std_logic;
-         p_output : out std_logic_vector(INPUT_PORTS-1 downto 0)
+    port(i_clk      : in  std_logic;
+         i_parallel : in  std_logic_vector(INPUT_PORTS-1 downto 0);
+         i_rst      : in  std_logic;
+         i_serial   : in  std_logic; -- serial input connected externally to o_serial (for simultation purpose)
+         o_serial   : out std_logic; -- serial output connected externally to i_serial (for simulation purpose)
+         o_parallel : out std_logic_vector(INPUT_PORTS-1 downto 0)
          );
 end top;
 
@@ -53,38 +55,34 @@ architecture behavioral of top is
     signal out_serial  : std_logic;
     signal rst_dbc     : std_logic;
     signal rst_ndbc    : std_logic;
-    
-    signal LEDR : std_logic_vector(INPUT_PORTS-1 downto 0);
 	
 	begin
     
-    rst_ndbc <= NOT reset;
+    rst_ndbc <= NOT i_rst;
     
     DBC: debounce
           generic map (17)
-         port map (CLOCK_50 => clk,
+         port map (CLOCK_50 => i_Clk,
                    input => rst_ndbc,
                    output => rst_dbc);
     
     U3: parallel_to_serial
         generic map (PORT_NUM => INPUT_PORTS)
-        port map (i_clk => clk,
-                  i_data => p_input,
+        port map (i_clk => i_Clk,
+                  i_data => i_parallel,
                   i_rst => rst_dbc,
                   i_en => enable,
                   o_transf => transfer,
-                  o_data => out_serial);
+                  o_data => o_serial);
+                  
                   
     U4: serial_to_parallel
         generic map (PORT_NUM => INPUT_PORTS)
-        port map (i_clk => clk,
+        port map (i_clk => i_Clk,
                   i_rst => rst_dbc,
-                  i_serial_data => out_serial,
+                  i_serial_data => i_serial,
                   i_enable => transfer,
                   o_data_valid => enable,
-                  o_parallel => LEDR);
-                  
-    p_output <= LEDR;
-    
+                  o_parallel => o_parallel);
 	
 end behavioral;
